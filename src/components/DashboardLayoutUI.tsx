@@ -9,6 +9,7 @@ import { FaDownload } from "react-icons/fa";
 import { FaArrowAltCircleUp } from "react-icons/fa";
 import { FaHandHoldingUsd } from "react-icons/fa";
 import { FaHandsHoldingCircle } from "react-icons/fa6";
+import { FaRegListAlt } from "react-icons/fa";
 import { GrUserAdmin } from "react-icons/gr";
 import Image from "next/image";
 import logo from "@/../public/images/logo2.jpeg";
@@ -34,6 +35,11 @@ const links = [
     href: "/dashboard/my-plans",
     label: "My Plans",
     icon: <FaHandsHoldingCircle />,
+  },
+  {
+    href: "/dashboard/transactions",
+    label: "Transactions",
+    icon: <FaRegListAlt />,
   },
 ];
 
@@ -84,7 +90,12 @@ export default function DashboardLayoutUI({
             <Image src={logo} width={90} alt="logo" />
           </Link>
           <SideProfile>
-            <FaUserCircle size={90} color="#fff" />
+            {/* <FaUserCircle size={90} color="#fff" /> */}
+            {user?.profileImage ? (
+              <ProfileImage src={user.profileImage} alt="Profile Image" />
+            ) : (
+              <FaUserCircle size={90} color="#fff" />
+            )}
             <User>{user?.fullname || "Loading...."} </User>
             <p className="online">online</p>
             <BuyBTCBox>
@@ -172,7 +183,7 @@ export default function DashboardLayoutUI({
                 <UserDropdown onClick={(e) => e.stopPropagation()}>
                   <p className="greeting">Hi, {user?.fullname}!</p>
 
-                  <Link href="#">
+                  <Link href="/dashboard/profile">
                     <div className="menu-item">
                       <FaUserCircle size={18} /> My profile
                     </div>
@@ -230,6 +241,7 @@ const Sidebar = styled.aside<{ $collapsed: boolean }>`
   width: 250px;
   display: ${(p) => (p.$collapsed ? "none" : "block")};
   padding-top: 40px;
+  padding-bottom: 20px;
   margin-left: 50px;
 
   @media (max-width: 750px) {
@@ -273,6 +285,13 @@ const SideProfile = styled.div`
     font-weight: bold;
     font-size: 13.5px;
   }
+`;
+
+const ProfileImage = styled.img`
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  object-fit: cover;
 `;
 
 const BuyBTCBox = styled.div`

@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     if ((u.accountBalance || 0) < num)
       return NextResponse.json(
         { error: "Insufficient funds" },
-        { status: 400 }
+        { status: 400 },
       );
 
     u.accountBalance = (u.accountBalance || 0) - num;
@@ -51,6 +51,15 @@ export async function POST(req: Request) {
       startDate: new Date(),
       active: true,
       accumulatedProfit: 0,
+    });
+
+    u.transactions.push({
+      type: "investment",
+      title: "Investment Initiated",
+      description: `You invested $${num} into the ${plan} plan`,
+      amount: num,
+      coin: "USD",
+      status: "approved",
     });
 
     await u.save();

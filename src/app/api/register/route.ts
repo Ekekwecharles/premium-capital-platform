@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import User from "@/models/User";
 import { connectDB } from "@/lib/mongodb";
+import generateWalletAddress from "@/utils/generateAddress";
 
 export async function POST(req: Request) {
   try {
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
     ) {
       return NextResponse.json(
         { error: "All required fields must be filled" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -39,7 +40,7 @@ export async function POST(req: Request) {
     if (password !== confirmPassword) {
       return NextResponse.json(
         { error: "Passwords do not match" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -48,7 +49,7 @@ export async function POST(req: Request) {
     if (usernameExists) {
       return NextResponse.json(
         { error: "Username already taken" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -57,12 +58,14 @@ export async function POST(req: Request) {
     if (emailExists) {
       return NextResponse.json(
         { error: "Email already registered" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    const walletAddress = generateWalletAddress();
 
     // Create new user
     const newUser = await User.create({
@@ -76,12 +79,13 @@ export async function POST(req: Request) {
       country,
       referral: referral || "",
       role: "user",
+      walletAddress,
     });
 
     console.log("New user created:", newUser);
     return NextResponse.json(
       { message: "Registration successful", user: newUser },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (err) {
     console.log(err);

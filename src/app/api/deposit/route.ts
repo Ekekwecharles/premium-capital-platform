@@ -1,15 +1,20 @@
 import { connectDB } from "@/lib/mongodb";
 import sendEmail from "@/lib/sendEmail";
 import User from "@/models/User";
+import { getCurrentUserFull } from "@/lib/auth";
 
 export async function POST(req: Request) {
   try {
+    const authUser = await getCurrentUserFull();
+    if (!authUser)
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+
     await connectDB();
     const { userId, coin, amount, screenshotBase64, depositAddress } =
       await req.json();
 
-    if (!userId)
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    if (authUser._id.toString() !== userId)
+      return Response.json({ error: "Forbidden" }, { status: 403 });
 
     const fullUser = await User.findById(userId);
 
@@ -23,6 +28,16 @@ export async function POST(req: Request) {
       depositAddress,
       status: "pending",
     });
+
+    fullUser.transactions.push({
+      type: "deposit",
+      title: "Account Deposit",
+      description: `Deposit: $${amount} (${coin})`,
+      amount,
+      coin,
+      status: "pending",
+    });
+
     await fullUser.save();
 
     // 📧 SEND EMAIL (PENDING)

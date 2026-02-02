@@ -7,7 +7,7 @@ export async function getCurrentUser() {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get("auth_token")?.value;
-    console.log("Token in auth.ts:", token);
+    // console.log("Token in auth.ts:", token);
 
     if (!token) return null;
 

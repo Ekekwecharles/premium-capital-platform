@@ -20,6 +20,8 @@ export interface IUser extends Document {
   country: string;
   referral?: string;
   role: string;
+  walletAddress: string;
+  profileImage?: string;
   resetToken?: string;
   resetTokenExpire?: number;
   createdAt: Date;
@@ -49,6 +51,25 @@ export interface IUser extends Document {
     date: Date;
   }[];
 
+  // History
+  transactions: {
+    type:
+      | "deposit"
+      | "withdrawal"
+      | "transfer"
+      | "investment"
+      | "profit"
+      | "referral_bonus";
+    direction?: "in" | "out"; // for transfer type
+    title: string; // Short label
+    description: string; // Fully customizable message
+    amount: number;
+    coin: string;
+    status: "pending" | "approved" | "rejected";
+    reference?: string; // PPE_xxxxx
+    date: Date;
+  }[];
+
   // INVESTMENTS
   investments: IInvestment[];
 }
@@ -72,6 +93,18 @@ const UserSchema = new Schema<IUser>(
     resetToken: { type: String },
     resetTokenExpire: { type: Number },
     createdAt: { type: Date, default: Date.now },
+
+    // Wallet Address
+    walletAddress: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+
+    profileImage: {
+      type: String,
+      default: "",
+    },
 
     // Balances
     accountBalance: { type: Number, default: 0 },
@@ -108,6 +141,27 @@ const UserSchema = new Schema<IUser>(
       default: [],
     },
 
+    // History
+    transactions: {
+      type: [
+        {
+          type: { type: String, required: true },
+          direction: {
+            type: String,
+            enum: ["in", "out"],
+          },
+          title: { type: String, required: true },
+          description: { type: String, required: true },
+          amount: { type: Number, required: true },
+          coin: { type: String, required: true },
+          status: { type: String, default: "pending" },
+          reference: String,
+          date: { type: Date, default: Date.now },
+        },
+      ],
+      default: [],
+    },
+
     investments: {
       type: [
         {
@@ -122,7 +176,7 @@ const UserSchema = new Schema<IUser>(
       default: [],
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // export default mongoose.models.User || mongoose.model("User", UserSchema);

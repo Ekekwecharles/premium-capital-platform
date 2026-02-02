@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
 
 export async function GET(
   req: Request,
-  context: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
 
@@ -27,7 +27,7 @@ export async function GET(
 
 export async function PUT(
   req: Request,
-  context: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
   await connectDB();
@@ -54,6 +54,39 @@ export async function PUT(
     }
   }
 
+  // Validate transactions (server-side protection)
+  if (Array.isArray(data.transactions)) {
+    for (const tx of data.transactions) {
+      if (!tx.type || !tx.direction || !tx.title || !tx.amount || !tx.coin) {
+        return NextResponse.json(
+          { error: "Invalid transaction data" },
+          { status: 400 },
+        );
+      }
+
+      if (tx.type === "withdrawal" && tx.direction !== "out") {
+        return NextResponse.json(
+          { error: "Withdrawal must be OUT" },
+          { status: 400 },
+        );
+      }
+
+      if (tx.type === "deposit" && tx.direction !== "in") {
+        return NextResponse.json(
+          { error: "Deposit must be IN" },
+          { status: 400 },
+        );
+      }
+
+      if (tx.type === "investment" && tx.direction !== "out") {
+        return NextResponse.json(
+          { error: "Investment must be OUT" },
+          { status: 400 },
+        );
+      }
+    }
+  }
+
   await user.save();
 
   return NextResponse.json(user);
@@ -61,7 +94,7 @@ export async function PUT(
 
 export async function DELETE(
   req: Request,
-  context: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
   await connectDB();

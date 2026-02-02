@@ -1,13 +1,39 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
 import styled from "styled-components";
 
 export default function AdminHome() {
+  const [totalUsers, setTotalUsers] = useState(0);
+
+  const toastIdRef = useRef("");
+  async function fetchUsers() {
+    toastIdRef.current = toast.loading("Loading...");
+    try {
+      const res = await fetch("/api/admin/users");
+      const data = await res.json();
+      setTotalUsers(data.length);
+    } catch (err) {
+      toast.error("Failed to fetch users");
+      console.error(err);
+    } finally {
+      toast.dismiss(toastIdRef.current);
+    }
+  }
+
+  useEffect(() => {
+    fetchUsers();
+    return () => {
+      if (toastIdRef.current) toast.dismiss(toastIdRef.current);
+    };
+  }, []);
+
   return (
     <Wrapper>
       <Card>
         <Title>Total Users</Title>
-        <Number>-</Number>
+        <Number>{totalUsers}</Number>
       </Card>
 
       <Card>

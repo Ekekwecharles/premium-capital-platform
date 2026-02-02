@@ -33,11 +33,13 @@ export default function AdminUsersPage() {
     country: "",
     referral: "",
     role: "user",
+    walletAddress: "",
     accountBalance: 0,
     totalProfit: 0,
     totalDeposit: 0,
     totalWithdrawal: 0,
     referralBonus: 0,
+    transactions: [],
     deposits: [],
     withdrawals: [],
     investments: [],
@@ -71,11 +73,13 @@ export default function AdminUsersPage() {
         country: "",
         referral: "",
         role: "user",
+        walletAddress: "",
         accountBalance: 0,
         totalProfit: 0,
         totalDeposit: 0,
         totalWithdrawal: 0,
         referralBonus: 0,
+        transactions: [],
         deposits: [],
         withdrawals: [],
         investments: [],
@@ -133,15 +137,50 @@ export default function AdminUsersPage() {
     }));
   }
 
+  // function removeArrayItem(key: string, index: number) {
+  //   setForm((p: any) => {
+  //     // This creates a deep clone of p to avoid mutating state directly.
+  //     const copy = JSON.parse(JSON.stringify(p));
+  //     copy[key].splice(index, 1);
+  //     return copy;
+  //   });
+  // }
+
   function removeArrayItem(key: string, index: number) {
-    setForm((p: any) => {
-      const copy = JSON.parse(JSON.stringify(p));
-      copy[key].splice(index, 1);
-      return copy;
-    });
+    setForm((p: any) => ({
+      ...p,
+      //This format is better because JSON.parse/stringify can have issues with certain data types like DATES & Undefined.
+      [key]: p[key].filter((_: any, i: number) => i !== index),
+    }));
+  }
+
+  function addTransaction() {
+    setForm((p: any) => ({
+      ...p,
+      transactions: [
+        ...(p.transactions || []),
+        {
+          type: "deposit",
+          direction: "in",
+          title: "",
+          description: "",
+          amount: 0,
+          coin: "USDT",
+          status: "approved",
+          date: new Date().toISOString(),
+        },
+      ],
+    }));
   }
 
   async function handleSave() {
+    const error = validateTransactions(form.transactions || []);
+
+    if (error) {
+      toast.error(error);
+      return;
+    }
+
     const toastId = toast.loading("Loading...");
 
     if (selectedId === "new") {
@@ -312,6 +351,34 @@ export default function AdminUsersPage() {
     }
   };
 
+  function validateTransactions(transactions: any[]) {
+    for (let i = 0; i < transactions.length; i++) {
+      const tx = transactions[i];
+
+      if (!tx.type) return `Transaction #${i + 1}: type is required`;
+      if (!tx.direction) return `Transaction #${i + 1}: direction is required`;
+      if (!tx.title) return `Transaction #${i + 1}: title is required`;
+      if (!tx.amount || tx.amount <= 0)
+        return `Transaction #${i + 1}: amount must be greater than 0`;
+      if (!tx.coin) return `Transaction #${i + 1}: coin is required`;
+
+      // Rule-based validation
+      if (tx.type === "withdrawal" && tx.direction !== "out") {
+        return `Transaction #${i + 1}: withdrawal must be OUT`;
+      }
+
+      if (tx.type === "deposit" && tx.direction !== "in") {
+        return `Transaction #${i + 1}: deposit must be IN`;
+      }
+
+      if (tx.type === "investment" && tx.direction !== "out") {
+        return `Transaction #${i + 1}: investment must be OUT`;
+      }
+    }
+
+    return null;
+  }
+
   return (
     <Page>
       <Left>
@@ -414,6 +481,14 @@ export default function AdminUsersPage() {
             </SelectSmall>
           </Row>
 
+          <Row>
+            <Label>Wallet Address</Label>
+            <Input
+              value={form.walletAddress || ""}
+              onChange={(e) => updateField("walletAddress", e.target.value)}
+            />
+          </Row>
+
           {/* Balances */}
           <Row>
             <Label>Account Balance</Label>
@@ -459,6 +534,105 @@ export default function AdminUsersPage() {
             />
           </Row>
 
+          {/* Transactions history: Nested Arrays  */}
+          <SectionTitle>Transactions (History)</SectionTitle>
+          <SmallBtn onClick={addTransaction}>+ Add transaction</SmallBtn>
+
+          {(form.transactions || []).map((tx: any, idx: number) => (
+            <ArrayCard key={idx}>
+              <Row>
+                <Label>Type</Label>
+                <SelectSmall
+                  value={tx.type}
+                  onChange={(e) =>
+                    updateField(`transactions.${idx}.type`, e.target.value)
+                  }
+                >
+                  <option value="deposit">deposit</option>
+                  <option value="withdrawal">withdrawal</option>
+                  <option value="investment">investment</option>
+                  <option value="transfer">transfer</option>
+                  <option value="profit">profit</option>
+                  <option value="referral_bonus">referral_bonus</option>
+                </SelectSmall>
+
+                <Label>Direction</Label>
+                <SelectSmall
+                  value={tx.direction || "in"}
+                  onChange={(e) =>
+                    updateField(`transactions.${idx}.direction`, e.target.value)
+                  }
+                >
+                  <option value="in">in</option>
+                  <option value="out">out</option>
+                </SelectSmall>
+              </Row>
+
+              <Row>
+                <Label>Title</Label>
+                <Input
+                  value={tx.title || ""}
+                  onChange={(e) =>
+                    updateField(`transactions.${idx}.title`, e.target.value)
+                  }
+                />
+              </Row>
+
+              <Row>
+                <Label>Description</Label>
+                <Input
+                  value={tx.description || ""}
+                  onChange={(e) =>
+                    updateField(
+                      `transactions.${idx}.description`,
+                      e.target.value,
+                    )
+                  }
+                />
+              </Row>
+
+              <Row>
+                <Label>Amount</Label>
+                <Input
+                  type="number"
+                  value={tx.amount || 0}
+                  onChange={(e) =>
+                    updateField(
+                      `transactions.${idx}.amount`,
+                      Number(e.target.value),
+                    )
+                  }
+                />
+
+                <Label>Coin</Label>
+                <Input
+                  value={tx.coin || ""}
+                  onChange={(e) =>
+                    updateField(`transactions.${idx}.coin`, e.target.value)
+                  }
+                />
+              </Row>
+
+              <Row>
+                <Label>Status</Label>
+                <SelectSmall
+                  value={tx.status || "pending"}
+                  onChange={(e) =>
+                    updateField(`transactions.${idx}.status`, e.target.value)
+                  }
+                >
+                  <option value="pending">pending</option>
+                  <option value="approved">approved</option>
+                  <option value="rejected">rejected</option>
+                </SelectSmall>
+
+                <SmallBtn onClick={() => removeArrayItem("transactions", idx)}>
+                  Remove
+                </SmallBtn>
+              </Row>
+            </ArrayCard>
+          ))}
+
           {/* Nested arrays */}
           <SectionTitle>Deposits</SectionTitle>
           <SmallBtn onClick={() => addArrayItem("deposits")}>
@@ -480,7 +654,7 @@ export default function AdminUsersPage() {
                   onChange={(e) =>
                     updateField(
                       `deposits.${idx}.amount`,
-                      Number(e.target.value)
+                      Number(e.target.value),
                     )
                   }
                 />
@@ -543,7 +717,7 @@ export default function AdminUsersPage() {
                   onChange={(e) =>
                     updateField(
                       `withdrawals.${idx}.amount`,
-                      Number(e.target.value)
+                      Number(e.target.value),
                     )
                   }
                 />
@@ -619,7 +793,7 @@ export default function AdminUsersPage() {
                   onChange={(e) =>
                     updateField(
                       `investments.${idx}.amount`,
-                      Number(e.target.value)
+                      Number(e.target.value),
                     )
                   }
                 />
@@ -633,7 +807,7 @@ export default function AdminUsersPage() {
                   onChange={(e) =>
                     updateField(
                       `investments.${idx}.dailyReturn`,
-                      Number(e.target.value)
+                      Number(e.target.value),
                     )
                   }
                 />
@@ -644,7 +818,7 @@ export default function AdminUsersPage() {
                   onChange={(e) =>
                     updateField(
                       `investments.${idx}.accumulatedProfit`,
-                      Number(e.target.value)
+                      Number(e.target.value),
                     )
                   }
                 />
@@ -657,7 +831,7 @@ export default function AdminUsersPage() {
                   onChange={(e) =>
                     updateField(
                       `investments.${idx}.active`,
-                      e.target.value === "true"
+                      e.target.value === "true",
                     )
                   }
                 >
@@ -673,7 +847,7 @@ export default function AdminUsersPage() {
                   onChange={(e) =>
                     updateField(
                       `investments.${idx}.startDate`,
-                      new Date(e.target.value).toISOString()
+                      new Date(e.target.value).toISOString(),
                     )
                   }
                 />

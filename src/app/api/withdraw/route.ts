@@ -23,14 +23,14 @@ export async function POST(req: Request) {
     if (num < 60000 || num > 200000) {
       return NextResponse.json(
         { error: "Amount must be between 60,000 and 200,000" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if ((user.accountBalance || 0) < num) {
       return NextResponse.json(
         { error: "Insufficient funds" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -44,6 +44,15 @@ export async function POST(req: Request) {
       address,
       status: "pending",
       date: new Date(),
+    });
+
+    user.transactions.push({
+      type: "withdrawal",
+      title: "Account Withdrawal",
+      description: `Withdrawal: $${amount} (${coin})`,
+      amount,
+      coin,
+      status: "pending",
     });
 
     await user.save();
